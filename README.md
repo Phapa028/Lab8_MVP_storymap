@@ -23,7 +23,7 @@ https://arcg.is/14K9f01
 4. Conducted a spatiotemporal NDVI comparison across years
 5. Visually compared vegetation patterns with bird observation locations
 
-## Tools Used
+# Tools Used
 - ArcGIS StoryMaps
 - Google Earth Engine
 - ArcGIS Pro
