@@ -25,7 +25,7 @@ Map.addLayer(aoiPolygon, {color: 'red'}, 'AOI Polygon');
 
 
 
-// ================== 2. LEAFY-SEASON IMAGERY (REDUCED) ==================
+// 2. LEAFY-SEASON IMAGERY 
 var leafyStart = '2023-05-01';
 var leafyEnd   = '2023-09-30';
 
@@ -34,7 +34,7 @@ var s2_leafy = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
   .filterDate(leafyStart, leafyEnd)
   .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 40));
 
-print('Reduced leafy-season image count:', s2_leafy.size());
+print('leafy-season image count:', s2_leafy.size());
 
 // Make a composite
 var leafyComposite = s2_leafy.median();
@@ -99,7 +99,7 @@ var s2_2018 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
   .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 40))
   .map(maskS2clouds);
 
-print('2018 image count:', s2_2018.size());   // should be 90+
+print('2018 image count:', s2_2018.size());  
 
 var img2018 = s2_2018.median();   // do NOT clip yet
 var ndvi2018 = img2018.normalizedDifference(['B8','B4'])
@@ -143,7 +143,7 @@ Map.addLayer(
 
 
 
-// histogram
+// histogram for NDVI 2023-2018
 var hist = ui.Chart.image.histogram(
   ndvi2018_clip.addBands(ndvi2023_clip),
   aoiPolygon,
@@ -192,7 +192,6 @@ print('NDVI 2023 stats:', stats2023);
 // ==================================
 // K-MEANS LAND COVER CLASSIFICATION
 // ==================================
-
 
 // Bands used for clustering
 var trainingBands = ['B2', 'B3', 'B4', 'B8'];  // blue, green, red, NIR
@@ -267,7 +266,7 @@ Map.addLayer(
 );
 
 
-// --- AOI-CLIPPED CANOPY MASK (only inside polygon) ---
+// --- AOI-CLIPPED CANOPY MASK ---
 var canopyMask_clipped = ndvi2023_clip.gt(canopyThreshold).rename('canopy_clipped');
 
 Map.addLayer(
@@ -281,21 +280,7 @@ Map.addLayer(
 
 
 
-// ================== BUFFER AROUND POINTS ==================
-var bufferRadius = 50;  // meters (you can change to 75 or 100)
-
-var bufferedPoints = birdPoints.map(function(pt) {
-  return pt.buffer(bufferRadius).set({'buffer_m': bufferRadius});
-});
-
-Map.addLayer(bufferedPoints, {color: 'yellow'}, 'Buffered Points');
-
-
-
-
-
-
-// =========== FIXED CANOPY AREA & PERCENT =============
+// FIXED CANOPY AREA & PERCENT extraction
 
 var pixelArea = ee.Image.pixelArea();
 
@@ -360,12 +345,19 @@ pointsWithCanopy.evaluate(function(fc) {
 
 
 
+// BUFFER AROUND POINTS
+var bufferRadius = 50;  // meters (you can change to 75 or 100)
+
+var bufferedPoints = birdPoints.map(function(pt) {
+  return pt.buffer(bufferRadius).set({'buffer_m': bufferRadius});
+});
+
+Map.addLayer(bufferedPoints, {color: 'yellow'}, 'Buffered Points');
 
 
 
 
-
-// ================== GFCC TREE CANOPY COVER (PRODUCT-BASED) ==================
+// GFCC TREE CANOPY COVER 
 // Global Forest Canopy Cover (~2010), 30m resolution
 var gfcc = ee.ImageCollection('NASA/MEASURES/GFCC/TC/v3')
               .first()
