@@ -52,6 +52,64 @@ Map.centerObject(aoi, 13);
 
 
 
+  // ==================================
+// K-MEANS LAND COVER CLASSIFICATION
+// ==================================
+
+// Bands used for clustering
+var trainingBands = ['B2', 'B3', 'B4', 'B8'];  // blue, green, red, NIR
+
+// Train classifier using your corrected polygon AOI
+var classifier = ee.Clusterer.wekaKMeans(6).train({
+  features: leafyComposite.sample({
+    region: aoiPolygon,   
+    scale: 10,
+    numPixels: 5000
+  }),
+  inputProperties: trainingBands
+});
+
+// Apply classifier to the image
+var classified = leafyComposite.select(trainingBands).cluster(classifier);
+
+// Clip to AOI polygon
+var classified_clip = classified.clip(aoiPolygon);
+
+// Add to map for visualization
+Map.addLayer(classified_clip.randomVisualizer(), {}, 'K-Means Classification');
+
+
+var clusterStats = classified_clip.reduceRegion({
+  reducer: ee.Reducer.frequencyHistogram(),
+  geometry: aoiPolygon,
+  scale: 10,
+  maxPixels: 1e13
+});
+
+print('Cluster frequencies:', clusterStats);
+
+// Convert dictionary for charting
+var dict = ee.Dictionary(clusterStats.get('cluster'));
+var chart = ui.Chart.array.values(dict.values(), 0, dict.keys())
+  .setChartType('ColumnChart')
+  .setOptions({
+    title: 'Pixel Count by K-Means Cluster',
+    hAxis: {title: 'Cluster'},
+    vAxis: {title: 'Pixel Count'},
+    legend: 'none'
+  });
+
+print(chart);
+
+// Full classification map
+Map.addLayer(classified.randomVisualizer(), {}, 'K-Means Classification (Full)');
+
+
+// Bird points on top to show where my survey points are at
+Map.addLayer(birdPoints, {color: 'blue', pointRadius: 6}, 'Bird Points (on top)');
+
+
+
 // ===================================
 // CLOUD MASK FUNCTION for Sentinel-2
 // ===================================
@@ -180,74 +238,6 @@ var stats2023 = ndvi2023_clip.reduceRegion({
 
 print('NDVI 2018 stats:', stats2018);
 print('NDVI 2023 stats:', stats2023);
-
-
-
-
-
-
-
-
-
-// ==================================
-// K-MEANS LAND COVER CLASSIFICATION
-// ==================================
-
-// Bands used for clustering
-var trainingBands = ['B2', 'B3', 'B4', 'B8'];  // blue, green, red, NIR
-
-// Train classifier using your corrected polygon AOI
-var classifier = ee.Clusterer.wekaKMeans(6).train({
-  features: leafyComposite.sample({
-    region: aoiPolygon,   
-    scale: 10,
-    numPixels: 5000
-  }),
-  inputProperties: trainingBands
-});
-
-// Apply classifier to the image
-var classified = leafyComposite.select(trainingBands).cluster(classifier);
-
-// Clip to AOI polygon
-var classified_clip = classified.clip(aoiPolygon);
-
-// Add to map for visualization
-Map.addLayer(classified_clip.randomVisualizer(), {}, 'K-Means Classification');
-
-
-var clusterStats = classified_clip.reduceRegion({
-  reducer: ee.Reducer.frequencyHistogram(),
-  geometry: aoiPolygon,
-  scale: 10,
-  maxPixels: 1e13
-});
-
-print('Cluster frequencies:', clusterStats);
-
-// Convert dictionary for charting
-var dict = ee.Dictionary(clusterStats.get('cluster'));
-var chart = ui.Chart.array.values(dict.values(), 0, dict.keys())
-  .setChartType('ColumnChart')
-  .setOptions({
-    title: 'Pixel Count by K-Means Cluster',
-    hAxis: {title: 'Cluster'},
-    vAxis: {title: 'Pixel Count'},
-    legend: 'none'
-  });
-
-print(chart);
-
-// Full classification map
-Map.addLayer(classified.randomVisualizer(), {}, 'K-Means Classification (Full)');
-
-
-Map.addLayer(birdPoints, {color: 'blue', pointRadius: 6}, 'Bird Points (on top)');
-
-
-
-
-
 
 
 
